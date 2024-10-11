@@ -19,19 +19,15 @@ defmodule Shop2Web.Router do
   end
 
   scope "/", Shop2Web do
-    ash_authentication_live_session :authentication_required,
-      on_mount: {Shop2Web.LiveUserAuth, :live_user_required} do
-      # Put live routes that require a user to be logged in here
-    end
+    ash_authentication_live_session :authenticated do
+      # use `live_user_required` for routes that must have an authenticated user
+      # live "/exmaple_one", ExampleLive, on_mount: {Shop2Web.LiveUserAuth, :live_user_required}
 
-    ash_authentication_live_session :authentication_optional,
-      on_mount: {Shop2Web.LiveUserAuth, :live_user_optional} do
-      # Put live routes that allow a user to be logged in *or* logged out here
-    end
+      # use `live_user_optional` for routes that may have an authenticated user
+      # live "/example_two", Example2Live, on_mount: {Shop2Web.LiveUserAuth, :live_user_optional}
 
-    ash_authentication_live_session :authentication_rejected,
-      on_mount: {Shop2Web.LiveUserAuth, :live_no_user} do
-      # Put live routes that a user who is logged in should never see here
+      # use `live_user_optional` for routes that must not have an authenticated user
+      # live "/example_three", Example3Live, on_mount: {Shop2Web.LiveUserAuth, :live_no_user}
     end
   end
 

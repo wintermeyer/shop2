@@ -54,6 +54,27 @@ end
 --
 
 mix ash.codegen add_fields_to_user
+mix ash.migrate
+
+--
+
+mix ash.patch.extend Shop2.Shop.Product Ash.Policy.Authorizer
+mix ash.patch.extend Shop2.Shop.Category Ash.Policy.Authorizer
+
+# add to both
+  policies do
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if actor_attribute_equals(:role, :admin)
+    end
+  end
+
+--
+
+# in your liveviews
+
+`socket.assigns.current_user` will be avaialable
+
+you will pass it in as `actor: socket.assigns.current_user` whenever calling actions
 
 --
 

@@ -1,5 +1,9 @@
 defmodule Shop2.Shop.Product do
-  use Ash.Resource, otp_app: :shop2, domain: Shop2.Shop, data_layer: AshPostgres.DataLayer
+  use Ash.Resource,
+    otp_app: :shop2,
+    domain: Shop2.Shop,
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
 
   postgres do
     table "products"
@@ -13,6 +17,16 @@ defmodule Shop2.Shop.Product do
       update: [:name, :description, :image, :price, :quantity_stored],
       create: [:name, :description, :image, :price, :quantity_stored]
     ]
+  end
+
+  policies do
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if actor_attribute_equals(:role, :admin)
+    end
+
+    policy action_type(:read) do
+      authorize_if always()
+    end
   end
 
   attributes do
