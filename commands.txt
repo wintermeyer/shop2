@@ -1,0 +1,33 @@
+
+mix archive.install hex igniter_new
+mix igniter.new shop2 \
+    --with phx.new \
+    --install ash,ash_phoenix,ash_postgres,ash_money
+
+---
+mix ash.gen.resource Shop2.Shop.Product \
+  --uuid-v7-primary-key id \
+  --attribute name:string:required:public \
+  --extend postgres \
+  --defaults create,read,update,destroy
+---
+mix ash.gen.resource Shop2.Shop.Product \
+  --uuid-primary-key id \
+  --attribute name:string:required:public \
+  --attribute description:string:required:public \
+  --attribute image:string:public \
+  --attribute price:money:required:public \
+  --attribute quantity_stored:integer:required:public \
+  --relationship belongs_to:category:Shop2.Shop.Category:public:required \
+  --extend postgres
+  --defaults create,read,update,destroy
+
+--
+
+mix ash.codegen add_products_and_categories
+mix ash.setup
+mix ash.migrate
+
+--
+
+Ash.read!(Shop2.Shop.Product)

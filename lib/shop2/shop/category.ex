@@ -6,6 +6,10 @@ defmodule Shop2.Shop.Category do
     repo Shop2.Repo
   end
 
+  actions do
+    defaults [:read, :destroy, update: [:name], create: [:name]]
+  end
+
   attributes do
     uuid_v7_primary_key :id
 

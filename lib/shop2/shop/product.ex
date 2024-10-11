@@ -6,6 +6,15 @@ defmodule Shop2.Shop.Product do
     repo Shop2.Repo
   end
 
+  actions do
+    defaults [
+      :read,
+      :destroy,
+      update: [:name, :description, :image, :price, :quantity_stored],
+      create: [:name, :description, :image, :price, :quantity_stored]
+    ]
+  end
+
   attributes do
     uuid_primary_key :id
 
