@@ -30,11 +30,17 @@ defmodule Shop2.Accounts.User do
   end
 
   actions do
+    defaults [:read]
+
     read :get_by_subject do
       description "Get a user by the subject claim in a JWT"
       argument :subject, :string, allow_nil?: false
       get? true
       prepare AshAuthentication.Preparations.FilterBySubject
+    end
+
+    update :make_admin do
+      change set_attribute(:role, :admin)
     end
 
     read :sign_in_with_password do

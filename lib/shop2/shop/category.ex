@@ -11,7 +11,14 @@ defmodule Shop2.Shop.Category do
   end
 
   actions do
-    defaults [:read, :destroy, update: [:name], create: [:name]]
+    defaults [:read]
+
+    create :create do
+      accept [:name]
+      primary? true
+      upsert? true
+      upsert_identity :unique_name
+    end
   end
 
   policies do
@@ -31,5 +38,9 @@ defmodule Shop2.Shop.Category do
       allow_nil? false
       public? true
     end
+  end
+
+  identities do
+    identity :unique_name, [:name]
   end
 end

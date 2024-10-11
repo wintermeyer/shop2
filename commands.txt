@@ -5,12 +5,13 @@ mix igniter.new shop2 \
     --install ash,ash_phoenix,ash_postgres,ash_money
 
 ---
-mix ash.gen.resource Shop2.Shop.Product \
+mix ash.gen.resource Shop2.Shop.Category \
   --uuid-v7-primary-key id \
   --attribute name:string:required:public \
   --extend postgres \
-  --defaults create,read,update,destroy
+  --defaults read
 ---
+
 mix ash.gen.resource Shop2.Shop.Product \
   --uuid-primary-key id \
   --attribute name:string:required:public \
@@ -20,8 +21,7 @@ mix ash.gen.resource Shop2.Shop.Product \
   --attribute quantity_stored:integer:required:public \
   --relationship belongs_to:category:Shop2.Shop.Category:public:required \
   --extend postgres
-  --defaults create,read,update,destroy
-
+  --default-actions read
 --
 
 mix ash.codegen add_products_and_categories
@@ -78,4 +78,95 @@ you will pass it in as `actor: socket.assigns.current_user` whenever calling act
 
 --
 
+mix ash_phoenix.gen.live Shop2.Shop Shop2.Shop.Product \
+  --resource-plural products
+
+--
+
+# add identity on categories having a unique name
+
+# on categories
+identities do
+  identity :unique_name, [:name]
+end
+
+mix ash.codegen make_categories_unique_on_name
+mix ash.migrate
+
+
+# modify the product create and update action to look like this
+
+    create :create do
+      primary? true
+      accept [:name, :description, :image, :price, :quantity_stored]
+      argument :category, :string, allow_nil?: false
+
+      change manage_relationship(:category,
+               type: :append_and_remove,
+               on_no_match: :create,
+               value_is_key: :name
+             )
+    end
+
+    update :update do
+      primary? true
+      require_atomic? false
+      accept [:name, :description, :image, :price, :quantity_stored]
+      argument :category, :string, allow_nil?: false
+
+      change manage_relationship(:category,
+               type: :append_and_remove,
+               on_no_match: :create,
+               value_is_key: :name
+             )
+    end
+
+
+# make the category create an upsert on name
+
+create :create do
+  accept [:name]
+  primary? true
+  upsert? true
+  upsert_identity :unique_name
+end
+--
+
+mix ash.patch.extend Shop2.Shop.Product Ash.Notifier.PubSub
+
+# add to product
+  pub_sub do
+    module Shop2Web.Endpoint
+    prefix "product"
+
+    publish :update, ["updated", :id]
+  end
+
+--
+
+def mount(_params, session, socket) do
+  {:ok, assign(socket, current_user: session.current_user)}
+end
+
+--
+
+actions do
+    defaults [:read] # <- add this
+end
+
+update :make_admin do
+  change set_attribute(:role, :admin)
+end
+
+Ash.read_first!(Shop2.Accounts.User, authorize?: false)
+|> Ash.update!(action: :make_admin, authorize?: false)
+
 Ash.read!(Shop2.Shop.Product)
+
+Ash.create!(Shop2.Shop.Product, %{
+    name: "Product 1",
+    description: "Description 1",
+    price: Money.new(:USD, 1000),
+    quantity_stored: 10,
+    category: "Category 1"
+    }, authorize?: false)
