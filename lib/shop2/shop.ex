@@ -3,5 +3,6 @@ defmodule Shop2.Shop do
 
   resources do
     resource Shop2.Shop.Category
+    resource Shop2.Shop.Product
   end
 end
