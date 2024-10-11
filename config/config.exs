@@ -14,13 +14,15 @@ config :ash,
   default_page_type: :keyset,
   policies: [no_filter_static_forbidden_reads?: false],
   known_types: [AshMoney.Types.Money],
-  custom_types: [money: AshMoney.Types.Money]
+  custom_types: [money: AshMoney.Types.Money, user_role: Shop2.Accounts.User.Types.Role]
 
 config :spark,
   formatter: [
     remove_parens?: true,
     "Ash.Resource": [
       section_order: [
+        :authentication,
+        :tokens,
         :postgres,
         :resource,
         :code_interface,
@@ -44,7 +46,7 @@ config :spark,
 config :shop2,
   ecto_repos: [Shop2.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Shop2.Shop]
+  ash_domains: [Shop2.Accounts, Shop2.Shop]
 
 # Configures the endpoint
 config :shop2, Shop2Web.Endpoint,

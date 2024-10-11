@@ -1,4 +1,5 @@
 import Config
+config :shop2, token_signing_secret: "8LoEra90JJiowdwlVuEbC6vPvawsEiyU"
 config :ash, disable_async?: true
 
 # Configure your database

@@ -33,6 +33,10 @@ defmodule Shop2.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:bcrypt_elixir, "~> 3.0"},
+      {:picosat_elixir, "~> 0.2"},
+      {:ash_authentication, "~> 4.1"},
+      {:ash_authentication_phoenix, "~> 2.0"},
       {:ex_money_sql, "~> 1.0"},
       {:ash_money, "~> 0.1"},
       {:ash_phoenix, "~> 2.0"},

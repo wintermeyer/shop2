@@ -26,7 +26,34 @@ mix ash.gen.resource Shop2.Shop.Product \
 
 mix ash.codegen add_products_and_categories
 mix ash.setup
+
+--
+
+mix igniter.install ash_authentication_phoenix \
+  --auth-strategy password
+
+--
+
 mix ash.migrate
+
+--
+
+mix ash.gen.enum Shop2.Accounts.User.Types.Role admin,manager,employee \
+  --short-name user_role
+
+# hand edit user
+
+mix ash.codegen add_fields_to_user
+
+# role field using enum
+attribute :role, :user_role do
+    allow_nil? false
+    default :user
+end
+
+--
+
+mix ash.codegen add_fields_to_user
 
 --
 

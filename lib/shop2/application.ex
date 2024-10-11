@@ -17,7 +17,8 @@ defmodule Shop2.Application do
       # Start a worker by calling: Shop2.Worker.start_link(arg)
       # {Shop2.Worker, arg},
       # Start to serve requests, typically the last entry
-      Shop2Web.Endpoint
+      Shop2Web.Endpoint,
+      {AshAuthentication.Supervisor, [otp_app: :shop2]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

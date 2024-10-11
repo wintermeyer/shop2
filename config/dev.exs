@@ -63,7 +63,7 @@ config :shop2, Shop2Web.Endpoint,
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :shop2, dev_routes: true
+config :shop2, dev_routes: true, token_signing_secret: "IRBVhSDrSUwOOoMpDytOCScA5NxCzdwy"
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
