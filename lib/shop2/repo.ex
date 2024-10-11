@@ -4,7 +4,7 @@ defmodule Shop2.Repo do
 
   def installed_extensions do
     # Add extensions here, and the migration generator will install them.
-    ["ash-functions"]
+    ["ash-functions", AshMoney.AshPostgresExtension]
   end
 
   def min_pg_version do

@@ -33,6 +33,8 @@ defmodule Shop2.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:ex_money_sql, "~> 1.0"},
+      {:ash_money, "~> 0.1"},
       {:ash_phoenix, "~> 2.0"},
       {:ash_postgres, "~> 2.0"},
       {:ash, "~> 3.0"},
