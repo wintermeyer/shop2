@@ -9,7 +9,8 @@ mix ash.gen.resource Shop2.Shop.Category \
   --uuid-v7-primary-key id \
   --attribute name:string:required:public \
   --extend postgres \
-  --defaults read
+  --default-actions read,destroy \
+  --timestamps
 ---
 
 mix ash.gen.resource Shop2.Shop.Product \
@@ -20,8 +21,9 @@ mix ash.gen.resource Shop2.Shop.Product \
   --attribute price:money:required:public \
   --attribute quantity_stored:integer:required:public \
   --relationship belongs_to:category:Shop2.Shop.Category:public:required \
-  --extend postgres
-  --default-actions read
+  --extend postgres \
+  --default-actions read,destroy \
+  --timestamps
 --
 
 mix ash.codegen add_products_and_categories

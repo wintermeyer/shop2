@@ -1,0 +1,150 @@
+mix archive.install hex igniter_new
+postgres --version
+mix igniter.new example_app \
+    --with phx.new \
+    --install ash,ash_phoenix,ash_postgres,ash_money
+cd example_app
+mix ash.gen.resource ExampleApp.Shop.Category \
+  --uuid-v7-primary-key id \
+  --attribute name:string:required:public \
+  --extend postgres \
+  --default-actions read,destroy \
+  --timestamps
+mix ash.gen.resource ExampleApp.Shop.Product \
+  --uuid-primary-key id \
+  --attribute name:string:required:public \
+  --attribute description:string:required:public \
+  --attribute price:money:required:public \
+  --attribute quantity_stored:integer:required:public \
+  --relationship belongs_to:category:ExampleApp.Shop.Category:public:required \
+  --extend postgres \
+  --default-actions read,destroy \
+  --timestamps
+mix ash.codegen add_categories_and_products
+mix ash.setup
+
+mix igniter.install ash_authentication_phoenix
+mix ash_authentication.add_strategy password
+mix ash.migrate
+
+mix ash.gen.enum ExampleApp.Accounts.User.Types.Role admin,user \
+  --short-name user_role
+
+# role field using enum
+attribute :role, :user_role do
+    allow_nil? false
+    default :user
+end
+
+mix ash.codegen add_user_role_to_user
+mix ash.migrate
+
+mix ash.patch.extend ExampleApp.Shop.Category Ash.Policy.Authorizer
+mix ash.patch.extend ExampleApp.Shop.Product Ash.Policy.Authorizer
+
+# add to both
+  policies do
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if actor_attribute_equals(:role, :admin)
+    end
+
+    policy action_type(:read) do
+      authorize_if always()
+    end
+  end
+
+# Add to product
+
+  actions do
+    defaults [
+      :read,
+      :destroy
+    ]
+
+    create :create do
+      primary? true
+      accept [:name, :description, :price, :quantity_stored]
+      argument :category, :string, allow_nil?: false
+
+      change manage_relationship(:category,
+               type: :append_and_remove,
+               on_no_match: :create,
+               value_is_key: :name
+             )
+    end
+
+    update :update do
+      primary? true
+      require_atomic? false
+      accept [:name, :description, :price, :quantity_stored]
+      argument :category, :string, allow_nil?: false
+
+      change manage_relationship(:category,
+               type: :append_and_remove,
+               on_no_match: :create,
+               value_is_key: :name
+             )
+    end
+  end
+
+# Add to category
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:name]
+      primary? true
+      upsert? true
+      upsert_identity :unique_name
+    end
+  end
+
+mix ash_phoenix.gen.live ExampleApp.Shop ExampleApp.Shop.Product \
+  --resource-plural products
+
+# Add to router
+  scope "/", ExampleAppWeb do
+    pipe_through :browser
+
+    ash_authentication_live_session :authenticated_routes do
+      # in each liveview, add one of the following at the top of the module:
+      #
+      # If an authenticated user must be present:
+      # on_mount {ExampleAppWeb.LiveUserAuth, :live_user_required}
+      #
+      # If an authenticated user *may* be present:
+      # on_mount {ExampleAppWeb.LiveUserAuth, :live_user_optional}
+      #
+      # If an authenticated user must *not* be present:
+      # on_mount {ExampleAppWeb.LiveUserAuth, :live_no_user}
+      #
+      live "/products", ProductLive.Index, :index
+      live "/products/new", ProductLive.Index, :new
+      live "/products/:id/edit", ProductLive.Index, :edit
+
+      live "/products/:id", ProductLive.Show, :show
+      live "/products/:id/show/edit", ProductLive.Show, :edit
+    end
+  end
+
+# add identity on categories having a unique name
+
+# on categories
+identities do
+  identity :unique_name, [:name]
+end
+
+mix ash.codegen make_categories_unique_on_name
+mix ash.migrate
+
+
+Ash.read!(ExampleApp.Shop.Product)
+
+Ash.create!(ExampleApp.Shop.Product, %{
+    name: "Product 1",
+    description: "Description 1",
+    price: Money.new(:USD, 1000),
+    quantity_stored: 10,
+    category: "Category 1"
+    }, authorize?: false)
