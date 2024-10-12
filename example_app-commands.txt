@@ -142,8 +142,7 @@ mix ash.migrate
 Ash.read!(ExampleApp.Shop.Product)
 
 Ash.create!(ExampleApp.Shop.Product, %{
-    name: "Product 1",
-    description: "Description 1",
+    name: "Product 2",
     price: Money.new(:USD, 1000),
     quantity_stored: 10,
     category: "Category 1"
