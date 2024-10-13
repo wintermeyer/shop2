@@ -1,0 +1,239 @@
+mix archive.install hex igniter_new
+postgres --version (14.13.0)
+mix igniter.new example_app \
+    --with phx.new \
+    --install ash,ash_phoenix,ash_postgres \
+    --yes
+cd example_app
+mix ash.gen.resource ExampleApp.Shop.Category \
+  --uuid-v7-primary-key id \
+  --attribute name:string:required:public \
+  --extend postgres \
+  --default-actions read,create,update,destroy \
+  --timestamps
+mix ash.gen.resource ExampleApp.Shop.Product \
+  --uuid-v7-primary-key id \
+  --attribute name:string:required:public \
+  --attribute description:string:public \
+  --attribute price:decimal:required:public \
+  --attribute quantity_stored:integer:required:public \
+  --relationship belongs_to:category:ExampleApp.Shop.Category:public:required \
+  --extend postgres \
+  --default-actions read,create,update,destroy \
+  --timestamps
+mix ash.codegen add_categories_and_products
+
+# Add category_id to products actions
+
+  actions do
+    defaults [
+      :read,
+      :destroy,
+      create: [:name, :description, :price, :quantity_stored, :category_id],
+      update: [:name, :description, :price, :quantity_stored, :category_id]
+    ]
+  end
+
+# Add seeds
+
+alias ExampleApp.Shop.{Category, Product}
+
+# Example categories
+fruits = Ash.create!(Category, %{name: "Fruits"}, authorize?: false)
+vegetables = Ash.create!(Category, %{name: "Vegetables"}, authorize?: false)
+
+# Example products
+Ash.create!(Product, %{name: "Apple", price: 1.20, quantity_stored: 100, category_id: fruits.id},
+  authorize?: false
+)
+
+Ash.create!(
+  Product,
+  %{
+    name: "Banana",
+    price: 0.80,
+    quantity_stored: 150,
+    category_id: fruits.id
+  },
+  authorize?: false
+)
+
+Ash.create!(
+  Product,
+  %{
+    name: "Carrot",
+    price: 0.50,
+    quantity_stored: 200,
+    category_id: vegetables.id
+  },
+  authorize?: false
+)
+
+Ash.create!(
+  Product,
+  %{
+    name: "Broccoli",
+    price: 1.00,
+    quantity_stored: 75,
+    category_id: vegetables.id
+  },
+  authorize?: false
+)
+
+mix ash.setup
+
+mix ash_phoenix.gen.live ExampleApp.Shop ExampleApp.Shop.Category \
+  --resource-plural categories
+mix ash_phoenix.gen.live ExampleApp.Shop ExampleApp.Shop.Product \
+  --resource-plural products
+
+
+mix igniter.install ash_authentication_phoenix
+mix ash_authentication.add_strategy password
+
+# role admin boolean to user
+    attribute :is_admin?, :boolean do
+      allow_nil? false
+      default false
+      public? true
+    end
+
+mix ash.codegen add_is_admin_to_user
+mix ash.migrate
+
+mix ash.patch.extend ExampleApp.Shop.Category Ash.Policy.Authorizer
+mix ash.patch.extend ExampleApp.Shop.Product Ash.Policy.Authorizer
+
+# add to both
+  policies do
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if actor_attribute_equals(:is_admin?, true)
+    end
+
+    policy action_type(:read) do
+      authorize_if always()
+    end
+  end
+
+# Add to product
+
+  actions do
+    defaults [
+      :read,
+      :destroy
+    ]
+
+    create :create do
+      primary? true
+      accept [:name, :description, :price, :quantity_stored]
+      argument :category, :string, allow_nil?: false
+
+      change manage_relationship(:category,
+               type: :append_and_remove,
+               on_no_match: :create,
+               value_is_key: :name
+             )
+    end
+
+    update :update do
+      primary? true
+      require_atomic? false
+      accept [:name, :description, :price, :quantity_stored]
+      argument :category, :string, allow_nil?: false
+
+      change manage_relationship(:category,
+               type: :append_and_remove,
+               on_no_match: :create,
+               value_is_key: :name
+             )
+    end
+  end
+
+# Add to category
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:name]
+      primary? true
+      upsert? true
+      upsert_identity :unique_name
+    end
+  end
+
+mix ash_phoenix.gen.live ExampleApp.Shop ExampleApp.Shop.Product \
+  --resource-plural products
+
+# Add to router
+  scope "/", ExampleAppWeb do
+    ash_authentication_live_session :authenticated_routes do
+      # in each liveview, add one of the following at the top of the module:
+      #
+      # If an authenticated user must be present:
+      # on_mount {ExampleAppWeb.LiveUserAuth, :live_user_required}
+      #
+      # If an authenticated user *may* be present:
+      # on_mount {ExampleAppWeb.LiveUserAuth, :live_user_optional}
+      #
+      # If an authenticated user must *not* be present:
+      # on_mount {ExampleAppWeb.LiveUserAuth, :live_no_user}
+      #
+      live "/categories/new", CategoryLive.Index, :new
+      live "/categories/:id/edit", CategoryLive.Index, :edit
+
+      live "/categories/:id/show/edit", CategoryLive.Show, :edit
+
+      live "/products/new", ProductLive.Index, :new
+      live "/products/:id/edit", ProductLive.Index, :edit
+
+      live "/products/:id/show/edit", ProductLive.Show, :edit
+    end
+  end
+
+  scope "/", ExampleAppWeb do
+    pipe_through :browser
+
+    get "/", PageController, :home
+    live "/categories", CategoryLive.Index, :index
+    live "/categories/:id", CategoryLive.Show, :show
+
+    live "/products", ProductLive.Index, :index
+    live "/products/:id", ProductLive.Show, :show
+
+# add identity on categories having a unique name
+
+# on categories
+identities do
+  identity :unique_name, [:name]
+end
+
+mix ash.codegen make_categories_unique_on_name
+mix ash.migrate
+
+# lib/accounts.ex
+
+resource ExampleApp.Accounts.User do
+  define :get_by_email, args: [:email]
+end
+
+# create a new product in the iex
+
+user = ExampleApp.Accounts.get_by_email!("sw@wintermeyer-consulting.de", authorize?: false)
+fruits = Ash.read!(ExampleApp.Shop.Category) |> hd
+alias ExampleApp.Shop.{Category, Product}
+
+Ash.create!(
+  Product,
+  %{
+    name: "Orange",
+    price: 0.25,
+    quantity_stored: 100,
+    category_id: fruits.id
+  },
+  actor: user
+)
+
+Ash.read!(ExampleApp.Shop.Product)
+
+Ash.create!(Category, %{name: "Test100"}, actor: user)
