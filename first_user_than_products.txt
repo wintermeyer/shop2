@@ -1,0 +1,64 @@
+mix archive.install hex igniter_new
+postgres --version (14.13.0)
+mix igniter.new example_app \
+    --with phx.new \
+    --install ash,ash_phoenix,ash_postgres \
+    --yes
+cd example_app
+mix ash.setup
+
+# Add Alpine.js to the project
+cd assets && yarn add alpinejs && cd ..
+
+#  assets/js/app.js
+
+import Alpine from "alpinejs";
+window.Alpine = Alpine;
+Alpine.start();
+[...]
+let liveSocket = new LiveSocket("/live", Socket, {
+  longPollFallbackMs: 2500,
+  params: { _csrf_token: csrfToken },
+  dom: {
+    onBeforeElUpdated(from, to) {
+      if (from._x_dataStack) {
+        window.Alpine.clone(from, to);
+      }
+    },
+  },
+});
+
+# Impliment TainwindCSS
+# https://tailwindui.com/components/application-ui/application-shells/stacked
+
+# zed AI command
+# app.html.heex
+
+### 1. Initialize Alpine.js
+Add Alpine.js's `x-data` attribute to the `<body>` tag to set up a reactive `open` state:
+
+```html
+<body class="h-full" x-data="{ open: false }">
+```
+
+### 2. Update the Mobile Menu Button
+In the mobile menu button, use @click="open = !open" to toggle the open state, and change aria-expanded to dynamically reflect the menu state:
+
+```html
+<button type="button" @click="open = !open" :aria-expanded="open" class="relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+```
+
+### 3. Control the Mobile Menu Display
+Wrap the mobile menu <div> with x-show="open" so it only displays when open is true:
+
+```html
+<div class="md:hidden" id="mobile-menu" x-show="open">
+```
+
+#### 4. Toggle the Menu Icons
+Use x-show on the menu icons to switch between open and close icons:
+
+```html
+<svg class="block h-6 w-6" x-show="!open" ...> <!-- Closed icon -->
+<svg class="hidden h-6 w-6" x-show="open" ...> <!-- Open icon -->
+```
