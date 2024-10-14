@@ -1,13 +1,10 @@
 mix archive.install hex igniter_new
-postgres --version (14.13.0)
 mix igniter.new example_app \
     --with phx.new \
     --install ash,ash_phoenix,ash_postgres \
     --yes
 cd example_app
 mix ash.setup
-
-# Add Alpine.js to the project
 cd assets && yarn add alpinejs && cd ..
 
 #  assets/js/app.js
@@ -34,31 +31,63 @@ let liveSocket = new LiveSocket("/live", Socket, {
 # zed AI command
 # app.html.heex
 
-### 1. Initialize Alpine.js
-Add Alpine.js's `x-data` attribute to the `<body>` tag to set up a reactive `open` state:
+# root.html.heex
+  <html class="h-full bg-gray-100">
+  <body class="h-full">
 
-```html
-<body class="h-full" x-data="{ open: false }">
-```
+# Page controller stuff
 
-### 2. Update the Mobile Menu Button
-In the mobile menu button, use @click="open = !open" to toggle the open state, and change aria-expanded to dynamically reflect the menu state:
+remove `layout: false` and add `Hello World!`
 
-```html
-<button type="button" @click="open = !open" :aria-expanded="open" class="relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
-```
+# Alpine.js Stuff
 
-### 3. Control the Mobile Menu Display
-Wrap the mobile menu <div> with x-show="open" so it only displays when open is true:
+# Modify the app.html.heex file with Alpine.js attributes
 
-```html
-<div class="md:hidden" id="mobile-menu" x-show="open">
-```
+## Desktop
 
-#### 4. Toggle the Menu Icons
-Use x-show on the menu icons to switch between open and close icons:
+Setup the main variables. Search for the `<nav>` element and add `x-data="{ openDesktopMenu: false, openMobileMenu: false }"` to it:
 
-```html
-<svg class="block h-6 w-6" x-show="!open" ...> <!-- Closed icon -->
-<svg class="hidden h-6 w-6" x-show="open" ...> <!-- Open icon -->
-```
+    <nav class="bg-gray-800" x-data="{ openDesktopMenu: false, openMobileMenu: false }">
+
+Toggle openDesktopMenu for the Desktop Avatar Menu. Add `x-on:click="openDesktopMenu = !openDesktopMenu"` into the <button> element:
+
+    <button
+      type="button"
+      class="relative flex max-w-xs items-center rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+      id="user-menu-button"
+      aria-expanded="false"
+      aria-haspopup="true"
+      x-on:click="openDesktopMenu = !openDesktopMenu"
+    >
+
+Show/Hide the Desktop Avatar Menu. Search for the <div> with `role="menu"` and add `x-show="openDesktopMenu"
+  x-transition` to it:
+
+    <div
+      class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+      role="menu"
+      aria-orientation="vertical"
+      aria-labelledby="user-menu-button"
+      tabindex="-1"
+      x-show="openDesktopMenu"
+      x-transition
+    >
+
+The x-show will make this dropdown menu visible only when openDesktopMenu is true, and x-transition will add a fade-in/fade-out effect.
+
+## Mobile
+
+Search for "Mobile menu button" and add `Mobile menu button` in the `<button>` element below that comment:
+
+    <!-- Mobile menu button -->
+    <button
+      type="button"
+      class="relative inline-flex items-center justify-center rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+      aria-controls="mobile-menu"
+      aria-expanded="false"
+      x-on:click="openMobileMenu = !openMobileMenu"
+    >
+
+Search the `<div>` element with the `id="mobile-menu"` and add `x-show="openMobileMenu" x-transition` to it:
+
+    <div class="md:hidden" id="mobile-menu" x-show="openMobileMenu" x-transition>
